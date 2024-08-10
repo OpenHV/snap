@@ -1,0 +1,70 @@
+name: openhv
+version: 20230917
+license: GPL-3.0+
+website: https://www.openhv.net
+source-code: https://github.com/OpenHV/OpenHV
+donation: https://opencollective.com/openhv
+summary: Pixelart Science-Fiction Real-Time-Strategy game
+description: >
+  It aims to be an open source and open content real-time strategy game. Set in the distant future where mega corporation battle themselves this game comes with multiplayer (LAN and internet) support, competent skirmish bots as well as an integrated map editor. It allows for spectators to join and replays to be shared.
+grade: stable
+confinement: strict
+base: core22
+compression: lzo
+
+architectures:
+- build-on: amd64
+
+apps:
+  openhv:
+    extensions: [gnome]
+    command: usr/bin/openhv
+    common-id: openhv.desktop
+    plugs:
+    - audio-playback
+    - desktop
+    - network
+    - network-bind
+    - opengl
+    - wayland
+    - x11
+
+parts:
+  openhv:
+    plugin: dotnet
+    source: https://github.com/OpenHV/OpenHV.git
+    source-tag: 20230917
+    override-build: |
+      case $SNAPCRAFT_TARGET_ARCH in
+        amd64)
+          RUNTIME=linux-x64 ;;
+        armhf)
+          RUNTIME=linux-arm ;;
+        arm64)
+          RUNTIME=linux-arm64 ;;
+      esac
+      make prefix=/usr DESTDIR=$SNAPCRAFT_PART_INSTALL engine
+      make prefix=/usr DESTDIR=$SNAPCRAFT_PART_INSTALL version
+      pushd engine
+        dotnet publish -c Release -p:TargetPlatform=net6 -p:CopyGenericLauncher=TRUE -p:CopyCncDll=FALSE -p:CopyD2kDll=FALSE -o $SNAPCRAFT_PART_INSTALL/usr/lib/openhv --runtime $RUNTIME --self-contained true
+        mv bin/*.so $SNAPCRAFT_PART_INSTALL/usr/lib/openhv/
+      popd
+      dotnet publish -c Release -o $SNAPCRAFT_PART_INSTALL/usr/lib/openhv/ --self-contained true
+      make prefix=/usr install-executables install-metadata install-data DESTDIR=$SNAPCRAFT_PART_INSTALL
+
+    build-packages:
+    - wget
+    - unzip
+    - dotnet-sdk-6.0
+
+    stage-packages:
+    - libfreetype6
+    - liblua5.1-0
+    - libopenal1
+    - libsdl2-2.0-0
+    - libicu70
+
+lint:
+  ignore:
+    - library:
+      - usr/lib/**/*.so*
