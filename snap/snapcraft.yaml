@@ -1,5 +1,5 @@
 name: openhv
-version: 20240803
+version: 20240908
 license: GPL-3.0+
 website: https://www.openhv.net
 source-code: https://github.com/OpenHV/OpenHV
@@ -34,7 +34,10 @@ parts:
   openhv:
     plugin: dotnet
     source: https://github.com/OpenHV/OpenHV.git
-    source-tag: 20240803
+    source-tag: 20240908
+    override-pull: |
+      craftctl default
+      make version
     override-build: |
       case $SNAPCRAFT_TARGET_ARCH in
         amd64)
@@ -45,7 +48,6 @@ parts:
           RUNTIME=linux-arm64 ;;
       esac
       make prefix=/usr DESTDIR=$SNAPCRAFT_PART_INSTALL engine
-      make prefix=/usr DESTDIR=$SNAPCRAFT_PART_INSTALL version
       pushd engine
         dotnet publish -c Release -p:TargetPlatform=net6 -p:CopyGenericLauncher=TRUE -p:CopyCncDll=FALSE -p:CopyD2kDll=FALSE -o $SNAPCRAFT_PART_INSTALL/usr/lib/openhv --runtime $RUNTIME --self-contained true
         mv bin/*.so $SNAPCRAFT_PART_INSTALL/usr/lib/openhv/
