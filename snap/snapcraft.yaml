@@ -1,5 +1,5 @@
 name: openhv
-version: '20250715'
+version: '20250725'
 license: GPL-3.0+
 website: https://www.openhv.net
 source-code: https://github.com/OpenHV/OpenHV
