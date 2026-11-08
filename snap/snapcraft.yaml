@@ -1,5 +1,5 @@
 name: openhv
-version: '20250725'
+version: '20261108'
 license: GPL-3.0+
 website: https://www.openhv.net
 source-code: https://github.com/OpenHV/OpenHV
@@ -9,12 +9,12 @@ description: >
   It aims to be an open source and open content real-time strategy game. Set in the distant future where mega corporation battle themselves this game comes with multiplayer (LAN and internet) support, competent skirmish bots as well as an integrated map editor. It allows for spectators to join and replays to be shared.
 grade: stable
 confinement: strict
-base: core22
+base: core24
 compression: lzo
 
-architectures:
-- build-on: amd64
-- build-on: arm64
+platforms:
+  amd64:
+  arm64:
 
 apps:
   openhv:
@@ -35,12 +35,13 @@ parts:
   openhv:
     plugin: dotnet
     source: https://github.com/OpenHV/OpenHV.git
-    source-tag: $SNAPCRAFT_PROJECT_VERSION
+    source-tag: ${SNAPCRAFT_PROJECT_VERSION}
     override-pull: |
       craftctl default
       make version
+      cd engine && sed -i 's|rm "bin/\${REPLACE}"|rm -f "bin/${REPLACE}"|' configure-system-libraries.sh # https://github.com/OpenRA/OpenRA/pull/22713
     override-build: |
-      case $SNAPCRAFT_TARGET_ARCH in
+      case ${CRAFT_ARCH_BUILD_FOR} in
         amd64)
           RUNTIME=linux-x64 ;;
         armhf)
@@ -48,26 +49,35 @@ parts:
         arm64)
           RUNTIME=linux-arm64 ;;
       esac
-      make prefix=/usr DESTDIR=$SNAPCRAFT_PART_INSTALL engine
+      make prefix=/usr DESTDIR=${SNAPCRAFT_PART_INSTALL} engine
       pushd engine
-        dotnet publish -c Release -p:TargetPlatform=net6 -p:CopyGenericLauncher=TRUE -p:CopyCncDll=FALSE -p:CopyD2kDll=FALSE -o $SNAPCRAFT_PART_INSTALL/usr/lib/openhv --runtime $RUNTIME --self-contained true
-        mv bin/*.so $SNAPCRAFT_PART_INSTALL/usr/lib/openhv/
+        dotnet publish -c Release -p:TargetPlatform=$RUNTIME -p:CopyGenericLauncher=TRUE -p:CopyCncDll=FALSE -p:CopyD2kDll=FALSE -o ${SNAPCRAFT_PART_INSTALL}/usr/lib/openhv --runtime $RUNTIME --self-contained true
+        ./configure-system-libraries.sh
+        # The script links to absolute host paths; point them at the staged libraries inside the snap instead.
+        for lib in bin/*.so; do
+          target=$(readlink "${lib}")
+          ln -sf "../${target#/usr/lib/}" "${SNAPCRAFT_PART_INSTALL}/usr/lib/openhv/$(basename "${lib}")"
+        done
       popd
-      dotnet publish -c Release -o $SNAPCRAFT_PART_INSTALL/usr/lib/openhv/ --self-contained true
-      make prefix=/usr install-executables install-metadata install-data DESTDIR=$SNAPCRAFT_PART_INSTALL
-      sed -i -Ee 's|^Icon=(.*)$|Icon=/usr/share/icons/hicolor/256x256/apps/\1.png|' $SNAPCRAFT_PART_INSTALL/usr/share/applications/openhv.desktop
+      dotnet publish -c Release -o ${SNAPCRAFT_PART_INSTALL}/usr/lib/openhv/ --self-contained true
+      make prefix=/usr install-executables install-metadata install-data DESTDIR=${SNAPCRAFT_PART_INSTALL}
+      sed -i -Ee 's|^Icon=(.*)$|Icon=/usr/share/icons/hicolor/256x256/apps/\1.png|' ${SNAPCRAFT_PART_INSTALL}/usr/share/applications/openhv.desktop
 
     build-packages:
     - wget
     - unzip
-    - dotnet-sdk-6.0
+    - dotnet-sdk-10.0
+    - libfreetype6
+    - liblua5.1-0
+    - libopenal1
+    - libsdl2-2.0-0
 
     stage-packages:
     - libfreetype6
     - liblua5.1-0
     - libopenal1
     - libsdl2-2.0-0
-    - libicu70
+    - libicu74
 
 lint:
   ignore:

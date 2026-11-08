@@ -16,3 +16,7 @@ Checkout this repository and run
 
     snapcraft
     sudo snap install openhv*.snap --dangerous
+
+## Update
+
+Set the release channel in the workflow file and the version in the snapcraft definition.
