@@ -14,7 +14,7 @@ OpenHV packaged as a snap.
 
 Checkout this repository and run
 
-    snapcraft
+    snapcraft pack
     sudo snap install openhv*.snap --dangerous
 
 ## Update

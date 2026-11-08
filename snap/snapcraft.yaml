@@ -22,6 +22,8 @@ apps:
     command: usr/bin/openhv
     common-id: openhv.desktop
     desktop: usr/share/applications/openhv.desktop
+    environment:
+      ALSOFT_DRIVERS: pulse
     plugs:
     - audio-playback
     - desktop
